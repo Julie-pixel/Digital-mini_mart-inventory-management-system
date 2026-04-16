@@ -1,16 +1,26 @@
 FROM php:8.2-apache
 
-# Enable mod_rewrite
-RUN a2enmod rewrite
+# Install mysqli extension
+RUN docker-php-ext-install mysqli
 
-# Set proper Apache DirectoryIndex
-RUN echo "DirectoryIndex index.php index.html" > /var/www/html/.htaccess
+# Enable Apache modules
+RUN a2enmod rewrite && \
+    a2enmod dir && \
+    a2enmod php8.2
+
+# Enable .htaccess overrides
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
 # Copy all project files into server
 COPY . /var/www/html/
 
 # Set proper permissions
-RUN chown -R www-data:www-data /var/www/html
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html && \
+    chmod 644 /var/www/html/.htaccess
+
+# Restart Apache to apply changes
+RUN service apache2 restart || true
 
 # Expose port
 EXPOSE 80
